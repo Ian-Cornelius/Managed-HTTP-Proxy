@@ -1,5 +1,22 @@
 declare module "simple-http-proxy" {
 
+    // Supply a target here
+    // The serverID
+    export const createProxyServer: HttpProxyServer['createProxyServer'];
+    export const getServerMiddleware: HttpProxyServer['getServerMiddleware'];
+    export const responseHelpers: HttpProxyServer['responseHelpers'];
+
+    type HttpProxyServer = {
+
+        createProxyServer: (options: import("http-proxy").ServerOptions) => number;
+        getServerMiddleware: (serverId: number, method: HandlerMethods, url: string, registrationOptions?: ProxyServerRegistrationOptions) => import("express").RequestHandler;
+        responseHelpers: {
+
+            isStatusOK: (statusCode: number) => boolean,
+            shouldUseCache: (statusCode: number) => boolean,
+        }
+    };
+
     type ActiveProxyServersMap = Map<number, ProxyServer>;
 
     type ProxyServer = {
@@ -19,7 +36,7 @@ declare module "simple-http-proxy" {
         response?: ProxyServerResponseHandlers
     };
 
-    type HandlerMethods = "POST" | "GET" | "DELETE" | "PUT";
+    type HandlerMethods = "POST" | "GET" | "DELETE" | "PUT" | "PATCH";
 
     type ProxyServerRegistrationOptions = {
 

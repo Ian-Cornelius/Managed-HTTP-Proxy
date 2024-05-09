@@ -1,3 +1,6 @@
+/// //<reference path="./http_proxy_server.d.ts" />
+//@ts-ignore
+/// <reference types="simple-http-proxy" />
 //@ts-check
 const { IncomingMessage, ServerResponse } = require("http");
 const httpProxy = require("http-proxy");
@@ -14,12 +17,11 @@ const URL_QUERY_MARKER = "?";
 const URL_PARAM_COLON_MARKER = ":";
 const URL_SPLITTER = "/";
 
+/**
+ * @type {import("simple-http-proxy").HttpProxyServer}
+ */
 const HttpProxyServer = {
 
-    /**
-     * @param {import("http-proxy").ServerOptions} options Supply a target here
-     * @returns {number} The serverID
-     */
     createProxyServer: (options) => {
 
         if(!options.target){
@@ -80,14 +82,6 @@ const HttpProxyServer = {
         return serverId;
     },
 
-    /**
-     * Generate a server middleware for the specific server ID.
-     * @param {number} serverId 
-     * @param {import("simple-http-proxy").HandlerMethods} method
-     * @param {string} url
-     * @param {import("simple-http-proxy").ProxyServerRegistrationOptions} registrationOptions
-     * @returns {import("express").RequestHandler}
-     */
     getServerMiddleware: (serverId, method, url, registrationOptions) => {
 
         if(!method || !url){
@@ -139,7 +133,6 @@ const HttpProxyServer = {
         return middleware;
     },
 
-    
     responseHelpers: {
 
         /**

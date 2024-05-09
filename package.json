@@ -1,8 +1,9 @@
 {
-  "name": "@ian-omondi/simple-http-proxy",
+  "name": "simple-http-proxy",
   "version": "1.0.0",
   "description": "An extended implementation of node-http-proxy to allow the creation of multiple managed proxy servers in Node and webpack-dev-server environments",
   "main": "http_proxy_server.js",
+  "types": "./http_proxy_server.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -21,7 +22,7 @@
     "url": "https://github.com/Ian-Cornelius/Simple-HTTP-Proxy/issues"
   },
   "homepage": "https://github.com/Ian-Cornelius/Simple-HTTP-Proxy#readme",
-  "devDependencies": {
+  "dependencies": {
     "http-proxy": "^1.18.1"
   }
 }
