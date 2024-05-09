@@ -1,6 +1,6 @@
 {
   "name": "managed-http-proxy",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An extended implementation of node-http-proxy to allow the creation of multiple managed proxy servers in Node and webpack-dev-server environments",
   "main": "http_proxy_server.js",
   "types": "./http_proxy_server.d.ts",
