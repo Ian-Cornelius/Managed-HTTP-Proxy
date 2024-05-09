@@ -1,13 +1,13 @@
 /// //<reference path="./http_proxy_server.d.ts" />
 //@ts-ignore
-/// <reference types="simple-http-proxy" />
+/// <reference types="managed-http-proxy" />
 //@ts-check
 const { IncomingMessage, ServerResponse } = require("http");
 const httpProxy = require("http-proxy");
 const queryString = require("querystring");
 const zlib = require("zlib");
 /**
- * @type {import("simple-http-proxy").ActiveProxyServersMap}
+ * @type {import("managed-http-proxy").ActiveProxyServersMap}
  */
 let runningServers = new Map();
 const URL_PARAM_FULL_MARKER = "/:";
@@ -18,7 +18,7 @@ const URL_PARAM_COLON_MARKER = ":";
 const URL_SPLITTER = "/";
 
 /**
- * @type {import("simple-http-proxy").HttpProxyServer}
+ * @type {import("managed-http-proxy").HttpProxyServer}
  */
 const HttpProxyServer = {
 
@@ -68,7 +68,7 @@ const HttpProxyServer = {
         proxyServer.on("proxyRes", onProxyResponse.bind(this, serverId));
         //Create our server object
         /**
-         * @type {import("simple-http-proxy").ProxyServer}
+         * @type {import("managed-http-proxy").ProxyServer}
          */
         let serverObject = {};
         serverObject.server = proxyServer;
@@ -167,9 +167,9 @@ const HttpProxyServer = {
  * Can only be called once for any given path and request method
  * 
  * @param {number} serverId 
- * @param {import("simple-http-proxy").HandlerMethods} method 
+ * @param {import("managed-http-proxy").HandlerMethods} method 
  * @param {string} url Ensure this is the same url used to make the request to the actual server, in case you are mutating the paths on call using target. Thus should have the same value to the path in target (without host)
- * @param {import("simple-http-proxy").ProxyServerRegistrationOptions} registrationOptions
+ * @param {import("managed-http-proxy").ProxyServerRegistrationOptions} registrationOptions
  */
 function doRegistration(serverId, method, url, registrationOptions){
 
@@ -188,8 +188,8 @@ function doRegistration(serverId, method, url, registrationOptions){
 
 /**
  * 
- * @param {import("simple-http-proxy").ProxyServerRegistrationOptions} registrationOptions 
- * @returns {import("simple-http-proxy").ProxyServerRegistrationOptions} Registration options with standardized options
+ * @param {import("managed-http-proxy").ProxyServerRegistrationOptions} registrationOptions 
+ * @returns {import("managed-http-proxy").ProxyServerRegistrationOptions} Registration options with standardized options
  */
 function checkAndStandardizeOptions(registrationOptions){
 
@@ -228,8 +228,8 @@ function checkAndStandardizeOptions(registrationOptions){
 
 /**
  * Standardized options and fill in missing values
- * @param {import("simple-http-proxy").ProxyServerRegistrationOptions} registrationOptions 
- * @returns {import("simple-http-proxy").ProxyServerRegistrationOptions} Standardized options
+ * @param {import("managed-http-proxy").ProxyServerRegistrationOptions} registrationOptions 
+ * @returns {import("managed-http-proxy").ProxyServerRegistrationOptions} Standardized options
  */
 function populateAndstandardizeOptions(registrationOptions){
 
@@ -273,7 +273,7 @@ function populateAndstandardizeOptions(registrationOptions){
      * 
      * @param {number} serverId 
      * @param {string} context
-     * @param {import("simple-http-proxy").ProxyServerRequestHandler} requestHandler
+     * @param {import("managed-http-proxy").ProxyServerRequestHandler} requestHandler
      */
 function registerRequestHandlerAndOptions(serverId, context, requestHandler){
 
@@ -290,7 +290,7 @@ function registerRequestHandlerAndOptions(serverId, context, requestHandler){
  * 
  * @param {number} serverId 
  * @param {string} context
- * @param {import("simple-http-proxy").ProxyServerResponseHandlers} handlers
+ * @param {import("managed-http-proxy").ProxyServerResponseHandlers} handlers
  */
 function registerResponseHandler(serverId, context, handlers){
 
@@ -361,7 +361,7 @@ async function onProxyResponse(serverId, proxyRes, req, res){
             console.log(`Handler to be triggered for server ID ${serverId} and context ${handlerContext}`);
             let interceptedBuffer = Buffer.from(buffer);
             /**
-             * @type {import("simple-http-proxy").ResponseHandlerResult}
+             * @type {import("managed-http-proxy").ResponseHandlerResult}
              */
             let resHandlerResult;
             if(runningServers.get(serverId).Handlers){
@@ -493,7 +493,7 @@ function isRedirect(statusCode){
 /**
  * Set the context for a handler
  * Rejects if context already set with handlers
- * @param {import("simple-http-proxy").HandlerMethods} method 
+ * @param {import("managed-http-proxy").HandlerMethods} method 
  * @param {string} url 
  * @param {number} serverId
  * @returns {string}
@@ -540,7 +540,7 @@ function handlerUrlDynamic(url){
 /**
  * CHECK FIRST IF URL MATCHES DYNAMIC and rewire url to dynamic one
  * Get the context for the correct handlers and options for a route
- * @param {import("simple-http-proxy").HandlerMethods | string} method 
+ * @param {import("managed-http-proxy").HandlerMethods | string} method 
  * @param {string} url 
  * @param {number} serverId 
  * @returns {string}
@@ -552,7 +552,7 @@ function getHandlerContext(method, url, serverId){
 
 /**
  * map a passed url properly. If dynamic, map to dynamic. If not dynamic, return as is
- * @param {import("simple-http-proxy").HandlerMethods | string} method
+ * @param {import("managed-http-proxy").HandlerMethods | string} method
  * @param {string} url 
  * @param {number} serverId 
  * @returns {string} The mapped url
@@ -730,7 +730,7 @@ function escapeForRegExp(string){
 
 /**
  * 
- * @param {import("simple-http-proxy").HandlerMethods | string} method 
+ * @param {import("managed-http-proxy").HandlerMethods | string} method 
  * @param {string} url 
  * @returns {string}
  */
@@ -740,7 +740,7 @@ function getSimpleHandlerContext(method, url){
 }
 
 /**
- * @returns {import("simple-http-proxy").ProxyServerRegistrationOptions}
+ * @returns {import("managed-http-proxy").ProxyServerRegistrationOptions}
  */
 function getDefaultRegistrationOptions(){
 
@@ -777,7 +777,7 @@ const ResponseGenerator = {
      * @param {import("express").Response} res 
      * @param {string} view 
      * @param {*} options 
-     * @returns {Promise<import("simple-http-proxy").ResponseHandlerResult>} response as rendered HTML
+     * @returns {Promise<import("managed-http-proxy").ResponseHandlerResult>} response as rendered HTML
      */
     renderView: async (res, view, options) => {
 
@@ -814,7 +814,7 @@ const ResponseGenerator = {
      * 
      * @param {number} code 
      * @param {string} msg 
-     * @returns {import("simple-http-proxy").ResponseHandlerResult} string empty. Just passed to buffer
+     * @returns {import("managed-http-proxy").ResponseHandlerResult} string empty. Just passed to buffer
      */
     errorCode: (code, msg) => {
 
@@ -830,7 +830,7 @@ const ResponseGenerator = {
     },
 
     /**
-     * @returns {import("simple-http-proxy").ResponseHandlerResult} a 304 code to the browser
+     * @returns {import("managed-http-proxy").ResponseHandlerResult} a 304 code to the browser
      */
     respondUnmodified: () => {
 

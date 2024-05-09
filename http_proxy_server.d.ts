@@ -1,4 +1,4 @@
-declare module "simple-http-proxy" {
+declare module "managed-http-proxy" {
 
     // Supply a target here
     // The serverID
