@@ -140,7 +140,8 @@ const HttpProxyServer = {
          */
         isStatusOK: (statusCode) => {
 
-            const statusOk = statusCode === 200 || statusCode === 304;
+            const statusOk = statusCode === 200 || statusCode === 304 
+                                || statusCode === 201 || statusCode === 202;
             if(!statusOk){
 
                 console.log("Status not OK with code: " + statusCode);
@@ -478,16 +479,6 @@ function copyHeaders(originalResponse, response){
         //@ts-expect-error
         response.headers = originalResponse.headers;
     }
-}
-
-/**
- * @deprecated
- * @param {number} statusCode 
- * @returns 
- */
-function isRedirect(statusCode){
-
-    return statusCode === 201 || statusCode === 301 || statusCode === 302 || statusCode === 307 || statusCode === 308;
 }
 
 /**

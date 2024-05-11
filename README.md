@@ -34,12 +34,32 @@ app.get("/", HttpProxy.getServerMiddleware(myServerId, "GET", "/"));
 
 getServerMiddleware() takes three arguments. These are the id of the server the middleware is for, the HTTP method for the request you'll make using the server, and the route. 
 
+#### About Urls
+
 ``
 NOTE:
 ``
-The url you provide is not the url that the proxy server will use to make the request to the target. The current implementation forwards the original url of the request to the target resource. You can apply a transformation before passing the control to the proxy middleware in case the target needs a different url.
+The url you provide is not the url that the proxy server will use to make the request to the target. 
 
-The url you provide is used to target the right response handlers for the request once the target resource responds. You can provide these through the registrationOptions object, which has the following properties:
+**The current implementation forwards the original url of the request to the target resource.** 
+
+THEREFORE, the url you pass to getServerMiddleware must be congruent to the request url. You can apply a transformation before passing the control to the proxy middleware in case the target needs a different url, but this must exactly match or be congruent to the url you pass to the proxy when creating the middleware for these requests.
+
+For example, if your express middleware serves the url /user/createNewUser, you should pass the same url for getServerMiddleware. If the express app serves a dynamic url, i.e is parameterized or match all, then pass the url in that form to getServerMiddleware.
+
+For example, if your express middleware serves the route /accounts/:userName, pass the url in this exact format to the proxy's getServerMiddleware. However, for the parameters, you can use a different keyword, as this won't affect how response handlers for the proxy are resolved. So, instead of /accounts/:userName, you can pass /accounts/:proxyUserName and the proxy will just work fine.
+
+For match all, leave them the same i.e /blog/* => /blog/*
+
+The url you provide to getServerMiddleware is used to target the right response handlers for a request once the target resource responds. That's why it's crucial you match the urls exactly when creating a proxy middleware. 
+
+#### HTTP Methods
+
+With the current implementation, the HTTP method you pass should also match the original method in your express middleware. The proxy currently only forwards requests to a target server, so it will infer from your middleware the request method and url. Matching the method and the url or its dynamic form, will ensure your response handlers fire for the correct requests and responses.
+
+#### Setting Up a Response Handler
+
+You can provide these through the registrationOptions object, which has the following properties:
 
 ```
     ProxyServerRegistrationOptions = {
@@ -64,7 +84,7 @@ You also have other properties you can send to request.options, of the type impo
 #### Example
 
 ```
-router.get("/myRoute/:previewId", HttpProxyServer.getServerMiddleware(myServerId, "GET", "/proxyRoute/api/:previewId", {
+router.get("/myRoute/:previewId", HttpProxyServer.getServerMiddleware(myServerId, "GET", "/myRoute/:previewId", {
 
     request: {
 
@@ -100,7 +120,7 @@ There are a few helpful utilities availed by managed-http-proxy to make using it
 
 ### responseHelpers
 
-This utility helps quickly decipher if the response from the target server is status OK or if the target server has responded with cache. Currently available functions are:
+This utility helps quickly decipher if the response from the target server is status OK or if the target server has responded with cache (304 unmodified). Currently available functions are:
 
 ``` 
 HttpProxyServer.responseHelpers.isStatusOK(statusCode: number): boolean
@@ -123,7 +143,7 @@ responseGenerator.parseBuffer.json(buffer: Buffer): object
 ```
 
 ## Using it with Webpack
-With webpack, you can intercept the webpack-dev-server middleware and implement your own for extended functionality. This can be useful for access REST APIs developed and maintained outside your development environment. 
+With webpack, you can intercept the webpack-dev-server middleware and implement your own for extended functionality. This can be useful for accessing REST APIs developed and maintained outside your development environment. 
 
 You can checkout the [webpack-dev-server documentation](https://webpack.js.org/configuration/dev-server/) for how to do this, but here's a snippet.
 
@@ -164,7 +184,7 @@ module.exports = function (middlewares, devServer){
     app.set("views", path.join(__dirname, "../dist/views"));
 
     //Configure a middleware and use as you do in normally in an express app
-    app.post("/new-user", HttpProxyServer.getServerMiddleware(serverID, "POST", "/proxy-new-user", createNewUserRegistrationOptions));
+    app.post("/new-user", HttpProxyServer.getServerMiddleware(serverID, "POST", "/new-user", createNewUserRegistrationOptions));
 }
 ```
 
