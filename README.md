@@ -34,12 +34,111 @@ app.get("/", HttpProxy.getServerMiddleware(myServerId, "GET", "/"));
 
 getServerMiddleware() takes three arguments. These are the id of the server the middleware is for, the HTTP method for the request you'll make using the server, and the route. 
 
-``
-NOTE:
-``
-The url you provide is not the url that the proxy server will use to make the request to the target. The current implementation forwards the original url of the request to the target resource. You can apply a transformation before passing the control to the proxy middleware in case the target needs a different url.
+### About Urls (Updated for version 1.0.4)
 
-The url you provide is used to target the right response handlers for the request once the target resource responds. You can provide these through the registrationOptions object, which has the following properties:
+#### Url Provided to getServerMiddleware()
+
+The url you provide when creating the middleware is not necessarily the url that the proxy server will use to make the request to the target. 
+
+With default options (no target provided), the library forwards the original url of the request to the target source. However, this changes depending on certain properties you pass in the request.options object.
+
+Regardless, managed-http-proxy is designed such that when creating the middleware, the url you provide **should match** the url of the express middleware it is attached to. The library references the original url of the middleware before the proxy to resolve handlers.
+
+Example:
+
+```
+app.post("/*", HttpProxy.getServerMiddleware(myProxyServerId, "POST", "/*", {
+
+    request: {
+
+        selfHandleResponse: true //No target provided. Options can also be null. Behavior will be the same.
+    }
+})); 
+```
+
+When setting up a managed-http-proxy middleware for a general purpose express middleware, the url provided in the proxy middleware is also assumed to be the url your express middleware resolves to. Example:
+
+```
+app.use(HttpProxy.getServerMiddleware(myGoogleServerId, "GET", "/*"));
+```
+
+This middleware will assume the primary express middleware fires for all '/*' route calls, and the handlers, if specified, will fire only for routes that match that case.
+
+#### Url Resolution for Target
+
+With specific properties in request.options provided, url behavior is modified as follows (please note, this doesn't affect how you specify the path when creating middlewares. Look at the section above (Url Provided to getServerMiddleware())):
+
+##### Specifying a "target" in request.options.target
+
+managed-http-proxy allows you to modify the url of the target server for each middleware you create using getServerMiddleware(). However, unlike the core library which modifies the whole path, managed-http-proxy appends to the main target provided when creating the proxy server using createProxyServer().
+
+Example:
+
+```
+app.get("/myHomePage", (req, res, next) => {
+
+    //Do a few things in your primary middleware
+
+    //Transfer control to the proxy middleware to complete the request.
+    next();
+}, HttpProxy.getServerMiddleware(myProxyHomePageServerId, "GET", "/myHomePage", {
+
+    request: {
+
+        options: {
+
+            target: "/home",
+        }
+    }
+}));
+```
+
+Since you've retargeted the original url, the proxy will make the request using a modified url of the form `${request.options.target}${primaryExpressMiddlewarePath}` to the target resource. In this example, that will be /home/myHomePage. 
+
+If you don't want the path in your primary express middleware (/myHomePage) appended to it, you can add one more property to request.options.
+
+##### Specify request.options.ignorePath
+
+When set to true, this property will alter the proxy's resolution of the final request url, and stop it from appending the path/url in your primary express middleware. Let's use the example above for illustration:
+
+```
+app.get("/myHomePage", (req, res, next) => {
+
+    //Do a few things in your primary middleware
+
+    //Transfer control to the proxy middleware to complete the request.
+    next();
+}, HttpProxy.getServerMiddleware(myProxyHomePageServerId, "GET", "/myHomePage", {
+
+    request: {
+
+        options: {
+
+            target: "/home",
+            ignorePath: true
+        }
+    }
+}));
+```
+Instead of /home/myHomePage, the proxy middleware now takes /home as the final url for the target resource since the original path in the primary express middleware is ignored.
+
+##### The Rule of Thumb for Target Url Resolution
+
+If you don't specify a path in request.options.target, the same url in the primary express middleware is forwarded to the proxy.
+
+If you specify a path in request.options.target, but don't set request.options.ignorePath to true, the proxy makes a request to the target resource using the url in the format `${request.options.target}${primaryExpressMiddlewarePath}`.
+
+If you specify a path in request.options.target, and set request.options.ignorePath to true, the proxy uses the url `${request.options.target}` to make the request to the target resource.
+
+Please check the official documentation of node-http-proxy for more alterations to this behavior.
+
+#### HTTP Methods
+
+With the current implementation, the HTTP method you pass should also match the original method in your express middleware. The proxy currently only forwards requests to a target server, so it will infer from your middleware the request method and url. Matching the method and the url or its dynamic form, will ensure your response handlers fire for the correct requests and responses.
+
+#### Setting Up a Response Handler
+
+You can provide these through the registrationOptions object, which has the following properties:
 
 ```
     ProxyServerRegistrationOptions = {
@@ -59,12 +158,12 @@ The url you provide is used to target the right response handlers for the reques
         }
     }
 ```
-You also have other properties you can send to request.options, of the type import("http-proxy").ServerOptions. However, the library doesn't make use of these options for now.
+You also have other properties you can send to request.options, of the type import("http-proxy").ServerOptions (full list [here](https://github.com/http-party/node-http-proxy?tab=readme-ov-file#options)). This library forwards these options to the core node-http-proxy library when running the proxy requests.
 
 #### Example
 
 ```
-router.get("/myRoute/:previewId", HttpProxyServer.getServerMiddleware(myServerId, "GET", "/proxyRoute/api/:previewId", {
+router.get("/myRoute/:previewId", HttpProxyServer.getServerMiddleware(myServerId, "GET", "/myRoute/:previewId", {
 
     request: {
 
@@ -100,7 +199,7 @@ There are a few helpful utilities availed by managed-http-proxy to make using it
 
 ### responseHelpers
 
-This utility helps quickly decipher if the response from the target server is status OK or if the target server has responded with cache. Currently available functions are:
+This utility helps quickly decipher if the response from the target server is status OK or if the target server has responded with cache (304 unmodified). Currently available functions are:
 
 ``` 
 HttpProxyServer.responseHelpers.isStatusOK(statusCode: number): boolean
@@ -122,8 +221,26 @@ responseGenerator.errorCode(code: number, msg: string): ResponseHandlerResult
 responseGenerator.parseBuffer.json(buffer: Buffer): object
 ```
 
+## Making HTTP to HTTPS Requests
+
+In case you run into certificate errors when making a http to https request using the proxy, add the option changeOrigin when creating the http proxy server. Example:
+
+```
+/**
+ * Create the proxy server
+ */
+const myGoogleServerId = HttpProxy.createProxyServer({
+
+    target: "https://www.google.com",
+    changeOrigin: true
+});
+```
+You can also read and provide ssl certificates based on your specific use case. Kindly [read about this](https://github.com/http-party/node-http-proxy?tab=readme-ov-file#options) in the docs for the core library node-http-proxy. managed-http-proxy forwards these options to the core library when creating the server and attaching middlewares, so everything should work as expected. 
+
+There's also an [insightful thread](https://stackoverflow.com/questions/14262986/node-js-hostname-ip-doesnt-match-certificates-altnames) in StackOverflow covering the same. [Direct link to solution](https://stackoverflow.com/a/45579167).
+
 ## Using it with Webpack
-With webpack, you can intercept the webpack-dev-server middleware and implement your own for extended functionality. This can be useful for access REST APIs developed and maintained outside your development environment. 
+With webpack, you can intercept the webpack-dev-server middleware and implement your own for extended functionality. This can be useful for accessing REST APIs developed and maintained outside your development environment. 
 
 You can checkout the [webpack-dev-server documentation](https://webpack.js.org/configuration/dev-server/) for how to do this, but here's a snippet.
 
@@ -164,12 +281,12 @@ module.exports = function (middlewares, devServer){
     app.set("views", path.join(__dirname, "../dist/views"));
 
     //Configure a middleware and use as you do in normally in an express app
-    app.post("/new-user", HttpProxyServer.getServerMiddleware(serverID, "POST", "/proxy-new-user", createNewUserRegistrationOptions));
+    app.post("/new-user", HttpProxyServer.getServerMiddleware(serverID, "POST", "/new-user", createNewUserRegistrationOptions));
 }
 ```
 
 ## Updates
-This library is currently at its infancy. However, before making it open source, I had used it for over a year, managing proxy access through middlewares in my webpack build for a web project. There's a lot to add to, such as using more request options, as permitted by the core library node-htt-proxy. 
+This library is currently at its infancy. However, before making it open source, I had used it for over a year, managing proxy access through middlewares in my webpack build for a web project. There's a lot to add to, with version 1.0.4 and above now supporting the use of request options as permitted by the core library node-htt-proxy. Please checkout the full list of options [here](https://github.com/http-party/node-http-proxy?tab=readme-ov-file#options)
 
 Feel free to add to the development and make a PR. 
 
