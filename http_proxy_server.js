@@ -114,14 +114,21 @@ const HttpProxyServer = {
             let middlewareOptions;
             if(serverObject.Handlers){
 
+                //OLD WAY WITHOUT OVERRIDE. Preferred
                 const requestHandler = serverObject.Handlers.get(getHandlerContext(req.method, req.originalUrl, serverId));
+                
+                // const overrideTarget = registrationOptions && registrationOptions.request && registrationOptions.request.options ? registrationOptions.request.options.target : null;
+                // const requestHandler = serverObject.Handlers.get(getHandlerContext(req.method, overrideTarget || req.originalUrl, serverId));
+                
                 middlewareOptions = requestHandler && requestHandler.request ? requestHandler.request.options : null;
             }
             middlewareOptions = {
-                    
-                target: middlewareOptions && middlewareOptions.target ? middlewareOptions.target : `${serverObject.target}${req.baseUrl}`,
-                ...middlewareOptions
+                
+                ...middlewareOptions,
+                target: middlewareOptions && middlewareOptions.target ? `${serverObject.target}${middlewareOptions.target}` : `${serverObject.target}${req.baseUrl}`
             };
+            console.log("Making proxy request with target"); //Show this target also includes base url ? No, override it
+            console.log(middlewareOptions.target);
             server.web(req, res, middlewareOptions, (e) => {
 
                 console.log("Failed to proxy with error:\n");
@@ -318,8 +325,13 @@ async function onProxyResponse(serverId, proxyRes, req, res){
 
     //Only allow this if set to selfHandleRes. Apparrently, http-proxy just fires this whether the flag is true or not. Difference, res.end() has been called
     const reqMethod = res.req.method;
-    //@ts-expect-error Property originalUrl doesn't exist on type IncomingMessage
+    //Old. Not supporting override targets
+    //@ts-expect-error
     const reqBaseUrl = res.req.originalUrl;
+
+    //@ts-expect-err property req doesn't exist  (Overriding using target)
+    // const reqBaseUrl = proxyRes.req.path; //Supports retargeting
+
     const resStatusCode = proxyRes.statusCode;
     const handlerContext = getHandlerContext(reqMethod, reqBaseUrl, serverId);
     const handlers = runningServers.get(serverId).Handlers.get(handlerContext);
@@ -597,7 +609,7 @@ function mapContextUrl(method, url, serverId){
 
         if(!mappedURL){
 
-            console.warn("\n\nUrl should be dynamic, but failed to map. Returning base url\n\n");
+            console.warn(`\n\nUrl ${url} should be dynamic, but failed to map. Returning base url\n\n`);
         }
 
         // console.log("END OF LOOP: Mapped URL for context is " + (mappedURL ? mappedURL : _url) + " from " + _url);
@@ -704,7 +716,7 @@ function urlCongruentToDynamic(_dynamicUrl, url){
  */
 function removePrecedingForwardSlash(url){
 
-    return url.charAt(0) === "/" ? url.substring(1, url.length) : url;
+    return url.charAt(0) === "/" && url.charAt(1) !== URL_MATCH_ALL_SPECIAL_MARKER ? url.substring(1, url.length) : url;
 }
 
 /**
