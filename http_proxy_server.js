@@ -125,7 +125,8 @@ const HttpProxyServer = {
             middlewareOptions = {
                 
                 ...middlewareOptions,
-                target: middlewareOptions && middlewareOptions.target ? `${serverObject.target}${middlewareOptions.target}` : `${serverObject.target}${req.baseUrl}`
+                target: res.locals[HttpProxyServer._DYNAMIC_TARGET_OVERRIDE] ? `${serverObject.target}${res.locals[HttpProxyServer._DYNAMIC_TARGET_OVERRIDE]}` : 
+                        middlewareOptions && middlewareOptions.target ? `${serverObject.target}${middlewareOptions.target}` : `${serverObject.target}${req.baseUrl}`
             };
             console.log("Making proxy request with target"); //Show this target also includes base url ? No, override it
             console.log(middlewareOptions.target);

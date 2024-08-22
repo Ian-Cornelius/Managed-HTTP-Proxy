@@ -97,6 +97,34 @@ Since you've retargeted the original url, the proxy will make the request using 
 
 If you don't want the path in your primary express middleware (/myHomePage) appended to it, you can add one more property to request.options.
 
+###### Update: V 1.0.5 (Dynamic Target Urls for request.options.target)
+To better support remapping of dynamic urls through the request.options.target option, V 1.0.5 introduces _DYNAMIC_TARGET_OVERRIDE, passed through res.locals, that allows us to dynamically remap the target as the middleware is used/invoked.
+
+Therefore, we can pass in a fully resolved url that contains params and queries to the proxy as we become aware of their actual values at runtime.
+
+Example:
+
+```
+app.get("/api/cats/:statusCode", (req, res, next) => {
+
+    res.locals[HttpProxy._DYNAMIC_TARGET_OVERRIDE] = `/${statusCode}`;
+    next();
+}, HttpProxy.getServerMiddleware(serverId, "GET", "/api/cats/:statusCode", {
+
+    //@ts-expect-error
+    request: {
+
+        options: {
+
+            ignorePath: true
+        }
+    }
+}));
+```
+Say, for a statusCode of 301 at runtime, above will remap /api/cats/301 to /301. If it changes to /api/cats/302, the param of the dynamic target also accurately changes to /302
+
+Will work with ignorePath directive.
+
 ##### Specify request.options.ignorePath
 
 When set to true, this property will alter the proxy's resolution of the final request url, and stop it from appending the path/url in your primary express middleware. Let's use the example above for illustration:

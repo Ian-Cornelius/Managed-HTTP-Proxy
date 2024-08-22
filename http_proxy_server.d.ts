@@ -5,6 +5,7 @@ declare module "managed-http-proxy" {
     export const createProxyServer: HttpProxyServer['createProxyServer'];
     export const getServerMiddleware: HttpProxyServer['getServerMiddleware'];
     export const responseHelpers: HttpProxyServer['responseHelpers'];
+    export const _DYNAMIC_TARGET_OVERRIDE: HttpProxyServer['_DYNAMIC_TARGET_OVERRIDE'];
 
     type HttpProxyServer = {
 
@@ -14,7 +15,8 @@ declare module "managed-http-proxy" {
 
             isStatusOK: (statusCode: number) => boolean,
             shouldUseCache: (statusCode: number) => boolean,
-        }
+        },
+        _DYNAMIC_TARGET_OVERRIDE: "DYNAMIC_TARGET";
     };
 
     type ActiveProxyServersMap = Map<number, ProxyServer>;
