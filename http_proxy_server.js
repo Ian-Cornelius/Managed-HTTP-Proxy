@@ -625,11 +625,9 @@ function mapContextUrl(method, url, serverId){
 function removeQueriesFromUrl(url){
 
     //tokenize
-    let tokenizedUrl = url.split(URL_SPLITTER);
-    //replace last token (containing query)
-    tokenizedUrl[tokenizedUrl.length - 1] = tokenizedUrl[tokenizedUrl.length - 1].replace(/\/*\?[\s\S]*$/g, "");
-    //Join
-    url = tokenizedUrl.join(URL_SPLITTER);
+    let tokenizedUrl = url.split(URL_QUERY_MARKER);
+    //URL now of index 0 from split
+    url = tokenizedUrl[0];
     //Remove last /
     url = url.charAt(url.length - 1) === URL_SPLITTER ? url.slice(0, url.length - 1) : url;
 
@@ -688,12 +686,14 @@ function urlCongruentToDynamic(_dynamicUrl, url){
         //Only do processing if not out of bounds
         if(startIndex < tokenizedDynamic.length){
 
+            //creating a url without the dynamics (that's ahead of it). Then, where dynamic should be, replacing with match all
             let reformedUrl = `/${tokenizedDynamic.slice(startIndex, endIndex).join(URL_SPLITTER)}`;
             //Ensure not "/"". Caused by splitting at times
             if(i < paramIndices.length){
 
                 //Current param infront of processed url. Add marker at end with backslash
-                processedDynamic+= escapeForRegExp(`${reformedUrl}/`) + "[\s\S]*";
+                //https://stackoverflow.com/questions/2912894/how-to-match-any-character-in-regular-expression - the .* reference
+                processedDynamic+= escapeForRegExp(`${reformedUrl !== "/" ? `${reformedUrl}/` : "/"}`) + ".*"; //New .* will better match all characters except new line //"[\s\S]*"
             } else {
     
                 //All params passed. Only escape reformed url. No / escape and character group
